@@ -41,12 +41,12 @@ int main(int argc, char * argv[]) {
     currId = fork();
   }
 
-  switch(currId) {
-    case 0:
-      close(slaves[currSlave-1].appToSlave[1]);
-      close(slaves[currSlave-1].slaveToApp[0]);
+  if (currId == 0){
+    close(slaves[currSlave-1].appToSlave[1]);
+    close(slaves[currSlave-1].slaveToApp[0]);
 
-      slaveProcess(slaves[currSlave - 1].appToSlave, slaves[currSlave - 1].slaveToApp);
-      break;
+    slaveProcess(slaves[currSlave - 1].appToSlave, slaves[currSlave - 1].slaveToApp);
   }
+
+  printf("messi chiquito\n");
 }

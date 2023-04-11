@@ -1,10 +1,10 @@
-#include "./include/slave.h"
+#include "./includes/slave.h"
 
 int slaveProcess(int * appToSlave, int * slaveToApp) {
   //De app to slave tenemos que sacar los files de la linea 6
   //De slave to app tenemos mandar la respuesta de la linea 24
   int subToSlave[2];
-  char *params[] = {"/usr/bin/md5sum", files[filesNum], NULL};
+  char *params[] = {"/usr/bin/md5sum", "./README.md", NULL};
   char output[MD5_LENGTH + 1] = {0};
 
 
@@ -24,4 +24,5 @@ int slaveProcess(int * appToSlave, int * slaveToApp) {
       printf("Md5: %s\n", output);
     }
   }
+  return 0;
 }
