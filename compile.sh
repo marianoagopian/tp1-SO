@@ -1,0 +1,1 @@
+gcc -Wall -std=c99 -g main.c -o main
