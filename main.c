@@ -47,6 +47,34 @@ int main(int argc, char * argv[]) {
 
     slaveProcess(slaves[currSlave - 1].appToSlave, slaves[currSlave - 1].slaveToApp);
   }
+  else{
+      // exit?
+      //close useless pipes
+      for( int i = 0 ; i < slavesQty ; i++ ){
+        close(slaves[i].appToSlave[0]); //READ == 0
+        close(slaves[i].slaveToApp[1]);
+      }
+      int filesSent = 0, filesRead = 0;
+
+      // porq convendria seguir agregando los files mas tarde en vez d ahora ?
+      for( int i = 0 ; filesSent < slavesQty ; i++){
+        write(slaves[i].appToSlave[1], &(files[filesSent]), sizeof(char *));
+        filesSent++;
+      }
+
+      //si no termino d leer
+      for( int i = 0; i < slavesQty && filesRead < filesNum ; i++){
+        //shared mem para el hash => implementar :)
+        
+        //semaforo?
+
+        // if there is any file missing
+        if(filesSent < filesNum){
+          write(slaves[i].appToSlave[1], &(files[filesSent]),sizeof(char *));
+          filesSent++;
+        }
+      }
+  }
 
   printf("messi chiquito\n");
 }
