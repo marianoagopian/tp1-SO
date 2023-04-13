@@ -12,7 +12,6 @@ int slaveProcess(int * appToSlave, int * slaveToApp) {
 
   while(1){
     read(appToSlave[0], &fileName, sizeof(char *));
-    printf("%s\n", fileName);
     if(pipe(subToSlave) == 0) {
       if(fork() == 0) {
         close(0);
@@ -25,8 +24,6 @@ int slaveProcess(int * appToSlave, int * slaveToApp) {
         close(subToSlave[PipeStdOut]);
         dup2(subToSlave[PipeStdIn], 0);
         close(subToSlave[PipeStdIn]);
-        //int dump;
-        //while((dump = getchar()) != '\n' && dump != EOF);
         wait(NULL);
         read(0, output, MD5_LENGTH);
         write(slaveToApp[1], output, MD5_LENGTH*sizeof(char));
