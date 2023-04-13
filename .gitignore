@@ -1,5 +1,6 @@
 # Executable program
 main
+respuesta.txt
 
 # Object files
 *.o

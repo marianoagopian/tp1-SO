@@ -34,7 +34,7 @@ int main(int argc, char * argv[]) {
 
   FD_ZERO(&fdRead); //According to library you need to use this function before doing something with this library
   //Checking how many slaves we need
-  int slavesQty = filesNum / FILES_PER_SLAVE + 1; //The + 1 is there to avoid problems with casting
+  int slavesQty = 2;//filesNum / FILES_PER_SLAVE + 1; //The + 1 is there to avoid problems with casting
 
   slave slaves[slavesQty];
 
@@ -53,6 +53,7 @@ int main(int argc, char * argv[]) {
   int currId = 1;
   for(currSlave = 0 ; currSlave < slavesQty && currId != 0 ; currSlave++) {
     currId = fork();
+    slaves[currSlave].pid = currId;
   }
 
   if (currId == 0) {
@@ -74,9 +75,7 @@ int main(int argc, char * argv[]) {
       // porq convendria seguir agregando los files mas tarde en vez d ahora ?
       for(int i = 0 ; filesSent < slavesQty ; i++){
         write(slaves[i].appToSlave[1], &(files[filesSent]), sizeof(char *));
-        filesSent++;
-
-        slaves[i].fileName = files[filesSent];
+        slaves[i].fileName = files[filesSent++];               
       }
 
       while(filesRead < filesNum) {
@@ -84,21 +83,23 @@ int main(int argc, char * argv[]) {
         // In case it's not select removes it from fdSet
         if(select(FD_SETSIZE, &fdRead, NULL, NULL, NULL) == -1) {
           perror("An error ocurred");
-          exit();
+          exit(1);
         }
 
         //si no termino d leer
         for(int i = 0 ; i < slavesQty && filesRead < filesNum ; i++) {
 
           if(FD_ISSET(slaves[i].slaveToApp[0], &fdRead)) { //This if is to check if the pipe slaves[i].slaveToApp has something in it
-            if(read(slaves[i].slaveToApp[0], currentHash, sizeof(char *)) == -1) {
+            if(read(slaves[i].slaveToApp[0], currentHash, sizeof(char)*MD5_LENGTH) == -1) {
               perror("An error ocurred reading pipe");
-              exit();
+              exit(1);
             }
 
             //shared mem para el hash => implementar :)
           
             //semaforo?
+
+            filesRead++;
 
             //Write in file
             fprintf(file, "File name: %s, MD5: %s, Slave id: %d\n", slaves[i].fileName, currentHash, slaves[i].pid);
@@ -115,5 +116,15 @@ int main(int argc, char * argv[]) {
         // This is because select (line 74) clears all file descriptors that are not ready to be read
         fdRead = fdBackupRead;
       }
+
+      //  Free slaves
+      for(int i = 0; i < slavesQty; i++){
+        close(slaves[i].appToSlave[1]);
+        close(slaves[i].slaveToApp[0]);
+
+        kill(slaves[i].pid, SIGKILL);
+      }
   }
+  fclose(file);
+  return 0;
 }
