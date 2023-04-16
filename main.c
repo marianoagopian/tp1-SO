@@ -1,5 +1,7 @@
 #include "./includes/main.h"
-
+#define SHNAME "md5"
+#define SHMEM_SIZE 16384 //?
+#define SLAVES_QTY(x) ((x) > 10 ? 10 : (x))
 // Creating struct for slave
 // need one way for app to comunicate with slave
 // and another for slave to comunicate with app
@@ -11,6 +13,8 @@ typedef struct slave {
   char * fileName;
   int pid;
 } slave;
+
+
 
 int main(int argc, char * argv[]) {
   char * files[argc];
@@ -34,7 +38,7 @@ int main(int argc, char * argv[]) {
 
   FD_ZERO(&fdRead); //According to library you need to use this function before doing something with this library
   //Checking how many slaves we need
-  int slavesQty = 2;//filesNum / FILES_PER_SLAVE + 1; //The + 1 is there to avoid problems with casting
+  int slavesQty = SLAVES_QTY(filesNum / FILES_PER_SLAVE + 1); //The + 1 is there to avoid problems with casting
 
   slave slaves[slavesQty];
 
@@ -56,6 +60,9 @@ int main(int argc, char * argv[]) {
     slaves[currSlave].pid = currId;
   }
 
+  shmemInfo shmem;
+  shmem.name = SHNAME;
+
   if (currId == 0) {
     close(slaves[currSlave-1].appToSlave[1]);
     close(slaves[currSlave-1].slaveToApp[0]);
@@ -64,13 +71,14 @@ int main(int argc, char * argv[]) {
   } else {
       // exit?
       //  close useless pipes
-      for(int i = 0 ; i < slavesQty ; i++ ){
+      for( int i = 0 ; i < slavesQty ; i++ ){
         close(slaves[i].appToSlave[0]); //READ == 0
         close(slaves[i].slaveToApp[1]);
       }
 
       char currentHash[MD5_LENGTH + 1] = {0};
       int filesSent = 0, filesRead = 0;
+      hashInfo bufToSend;
 
       // porq convendria seguir agregando los files mas tarde en vez d ahora ?
       for(int i = 0 ; filesSent < slavesQty ; i++){
@@ -95,7 +103,14 @@ int main(int argc, char * argv[]) {
               exit(1);
             }
 
-            //shared mem para el hash => implementar :)
+            //Completing hashData
+            bufToSend.pid = slaves[i].pid;
+            strcpy(bufToSend.hash, currentHash);
+            strcpy(bufToSend.file_name, slaves[i].fileName);
+            // opcion alternativa strcat
+
+
+            pwrite(shmem.fd, &bufToSend, sizeof(bufToSend),filesRead);
           
             //semaforo?
 
@@ -124,7 +139,12 @@ int main(int argc, char * argv[]) {
 
         kill(slaves[i].pid, SIGKILL);
       }
+
+      //Closing shared memory region
+      int i = munmap(shmem.mmap_addr, sizeof(shmem)); //check
+      int c = close(shmem.fd);
   }
+ 
   fclose(file);
   return 0;
 }
