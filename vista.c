@@ -41,10 +41,10 @@ int main(int argc, char *argv[]) {
 
     if(pread(shmem.fd, &hash, sizeof(hashInfo), i * sizeof(hashInfo)) == -1) {
       sem_post(semClose.address);
-      exit(1);
+      exit(ERROR_READING_SHMEM);
     }
 
-    printf("File name: %s | MD5: %s | Slave id: %d\n", hash.fileName, hash.hash, hash.pid);
+    printf("Slave id: %d | MD5: %s | File name: %s \n", hash.pid, hash.hash, hash.fileName);
 
     if(hash.filesLeft <= 1) {
       finished = 1;

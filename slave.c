@@ -8,24 +8,22 @@ int slaveProcess(int * appToSlave, int * slaveToApp) {
 
   while(1){
     read(appToSlave[0], &fileName, sizeof(char *));
-    if(pipe(subToSlave) == 0) {
-      if(fork() == 0) {
-        close(READ);
-        close(subToSlave[READ]);
-        dup2(subToSlave[WRITE], 1);
-        close(subToSlave[WRITE]);
-        params[1] = fileName;
-        execvp("/usr/bin/md5sum", params);
-      } else {
-        close(subToSlave[WRITE]);
-        dup2(subToSlave[READ], 0);
-        close(subToSlave[READ]);
-        wait(NULL);
-        read(READ, output, MD5_LENGTH);
-        write(slaveToApp[WRITE], output, MD5_LENGTH*sizeof(char));
-      }
+    createPipe(subToSlave);
+    if(createSlave() == 0) {
+      closePipe(READ);
+      closePipe(subToSlave[READ]);
+      duplicateFD(subToSlave[WRITE], 1);
+      closePipe(subToSlave[WRITE]);
+      params[1] = fileName;
+      execvp("/usr/bin/md5sum", params);
+    } else {
+      closePipe(subToSlave[WRITE]);
+      duplicateFD(subToSlave[READ], 0);
+      closePipe(subToSlave[READ]);
+      wait(NULL);
+      read(READ, output, MD5_LENGTH);
+      write(slaveToApp[WRITE], output, MD5_LENGTH*sizeof(char));
     }
-
   }
   return 0;
 }

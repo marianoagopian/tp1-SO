@@ -3,6 +3,4 @@
 
 #include "./lib.h"
 
-#include <limits.h>
-
 #endif

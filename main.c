@@ -19,8 +19,8 @@ int main(int argc, char * argv[]) {
   int filesNum = 0;
 
   if(argc <= 1) {
-    fprintf(stderr, "%s\n", "No files found");
-    exit(1);
+    perror("No files found");
+    exit(ERROR_NO_FILES);
   }
 
   for(int i = 1 ; i < argc ; i++) {
@@ -31,9 +31,7 @@ int main(int argc, char * argv[]) {
 
   fd_set fdRead, fdBackupRead;
 
-  FILE * file;
-
-  file = fopen("respuesta.txt", "w");
+  FILE * file = openFile("respuesta.txt", "w");
 
   FD_ZERO(&fdRead); //According to library you need to use this function before doing something with this library
   //Checking how many slaves we need
@@ -43,8 +41,8 @@ int main(int argc, char * argv[]) {
 
   //Initializing pipes for slaves
   for(int i = 0 ; i < slavesQty ; i++) {
-    pipe(slaves[i].appToSlave);
-    pipe(slaves[i].slaveToApp);
+    createPipe(slaves[i].appToSlave);
+    createPipe(slaves[i].slaveToApp);
 
     FD_SET(slaves[i].slaveToApp[READ], &fdRead);
   }
@@ -62,13 +60,15 @@ int main(int argc, char * argv[]) {
 
   if(createSem(&semRead) == SEM_FAILED){
     unlinkShMem(shmem.name);
-    exit(1);
+    perror("An error occurred while creating the semaphore");
+    exit(ERROR_CREATING_SEM);
   }
 
   if(createSem(&semClose) == SEM_FAILED){
     unlinkShMem(shmem.name);
     unlinkSem(&semRead);
-    exit(1);
+    perror("An error occurred while creating the semaphore");
+    exit(ERROR_CREATING_SEM);
   }
 
   sem_post(semClose.address);
@@ -90,34 +90,33 @@ int main(int argc, char * argv[]) {
   }
 
   if (currId == 0) { // cerrar los demas esclavos?
-    close(slaves[currSlave-1].appToSlave[WRITE]);
-    close(slaves[currSlave-1].slaveToApp[READ]);
+    closePipe(slaves[currSlave-1].appToSlave[WRITE]);
+    closePipe(slaves[currSlave-1].slaveToApp[READ]);
 
     slaveProcess(slaves[currSlave - 1].appToSlave, slaves[currSlave - 1].slaveToApp);
   } else {
       // exit?
       //  close useless pipes
       for( int i = 0 ; i < slavesQty ; i++ ){
-        close(slaves[i].appToSlave[READ]);
-        close(slaves[i].slaveToApp[WRITE]);
+        closePipe(slaves[i].appToSlave[READ]);
+        closePipe(slaves[i].slaveToApp[WRITE]);
       }
 
       char currentHash[MD5_LENGTH + 1] = {0};
       int filesSent = 0, filesRead = 0;
       hashInfo bufToSend;
 
-      // porq convendria seguir agregando los files mas tarde en vez d ahora ?
       for(int i = 0 ; filesSent < slavesQty ; i++){
         write(slaves[i].appToSlave[WRITE], &(files[filesSent]), sizeof(char *));  //hacer chequeo de errores en lib.c
-        slaves[i].fileName = files[filesSent++];               
+        slaves[i].fileName = files[filesSent++];
       }
 
       while(filesRead < filesNum) {
         // Check if a pipe is ready to be read
         // In case it's not select removes it from fdSet
         if(select(FD_SETSIZE, &fdRead, NULL, NULL, NULL) == -1) {
-          perror("An error ocurred");  //ver todos los perror y exit
-          exit(1);
+          perror("An error ocurred related with file descriptors"); 
+          exit(ERROR_SELECT);
         }
 
         //si no termino d leer
@@ -126,7 +125,7 @@ int main(int argc, char * argv[]) {
           if(FD_ISSET(slaves[i].slaveToApp[READ], &fdRead)) { //This if is to check if the pipe slaves[i].slaveToApp has something in it
             if(read(slaves[i].slaveToApp[READ], currentHash, sizeof(char)*MD5_LENGTH) == -1) {
               perror("An error ocurred reading pipe");
-              exit(1);
+              exit(ERROR_READING_SLAVE_PIPE);
             }
 
             //Completing hashData
@@ -143,7 +142,7 @@ int main(int argc, char * argv[]) {
             filesRead++;
 
             //Write in file
-            fprintf(file, "File name: %s, MD5: %s, Slave id: %d\n", bufToSend.fileName, bufToSend.hash, bufToSend.pid);
+            fprintf(file, "Slave id: %d | MD5: %s | File Name: %s\n", bufToSend.pid, bufToSend.hash, bufToSend.fileName);
             
             // if there is any file missing
             if(filesSent < filesNum) {
@@ -160,8 +159,8 @@ int main(int argc, char * argv[]) {
 
       //  Free slaves
       for(int i = 0; i < slavesQty; i++){
-        close(slaves[i].appToSlave[WRITE]);
-        close(slaves[i].slaveToApp[READ]);
+        closePipe(slaves[i].appToSlave[WRITE]);
+        closePipe(slaves[i].slaveToApp[READ]);
 
         kill(slaves[i].pid, SIGKILL);
       }
@@ -172,7 +171,9 @@ int main(int argc, char * argv[]) {
       sem_wait(semClose.address);
 
       closeSem(&semClose);
-      fclose(file);
+
+      
+      closeFile(file);
       unlinkShMem(shmem.name);
       unlinkSem(&semClose);
       unlinkSem(&semRead);

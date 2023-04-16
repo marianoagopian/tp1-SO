@@ -7,6 +7,8 @@
 #define _BSD_SOURCE
 #define  _XOPEN_SOURCE 500
 
+#include "./errors.h"
+
 #include <semaphore.h>
 #include <signal.h>
 #include <stdio.h>
@@ -50,6 +52,10 @@ typedef struct hashInfo {
 	int filesLeft;
 } hashInfo;
 
+//Files
+FILE * openFile(char *fileName, char * mode);
+void closeFile(FILE * file);
+
 // Shared Memory
 void openShMem(shmemInfo * data);
 void createShMem(shmemInfo * data);
@@ -63,7 +69,15 @@ void openSem(semInfo * data);
 void closeSem(semInfo * data);
 void unlinkSem(semInfo * data);
 
+//File descriptores
+void createPipe(int fd[2]);
+void closePipe(int fd);
+void duplicateFD(int oldFd, int newFd);
+
 // Check file
 int isFile(const char * filename);
+
+// Slaves
+int createSlave();
 
 #endif
