@@ -5,8 +5,8 @@
 
 #define MD5_LENGTH 32
 #define FILES_PER_SLAVE 2
-#define PipeStdIn 0
-#define PipeStdOut 1
+#define READ 0
+#define WRITE 1
 
 #include <signal.h>
 #include <stdio.h>
@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <semaphore.h>
+#include "./lib.h"
 
 int slaveProcess(int * appToSlave, int * slaveToApp);
 

@@ -1,6 +1,5 @@
 #include "./includes/main.h"
 #define SHNAME "md5"
-#define SHMEM_SIZE 16384 //?
 #define SLAVES_QTY(x) ((x) > 10 ? 10 : (x))
 // Creating struct for slave
 // need one way for app to comunicate with slave
@@ -15,7 +14,6 @@ typedef struct slave {
 } slave;
 
 
-
 int main(int argc, char * argv[]) {
   char * files[argc];
 
@@ -23,7 +21,7 @@ int main(int argc, char * argv[]) {
 
   if(argc <= 1) {
     fprintf(stderr, "%s\n", "No files found");
-    return -1;
+    exit(1);
   }
 
   for(int i = 1 ; i < argc ; i++) {
@@ -47,10 +45,38 @@ int main(int argc, char * argv[]) {
     pipe(slaves[i].appToSlave);
     pipe(slaves[i].slaveToApp);
 
-    FD_SET(slaves[i].slaveToApp[0], &fdRead);
+    FD_SET(slaves[i].slaveToApp[READ], &fdRead);
   }
 
   fdBackupRead = fdRead;
+
+  shmemInfo shmem;
+  shmem.name = SHNAME;
+
+  semInfo semRead, semClose;
+  semRead.name = S_READ_NAME;
+  semClose.name = S_CLOSE_NAME;
+
+  createShMem(&shmem);
+
+  if(createSem(&semRead) == SEM_FAILED){
+    unlinkShMem(shmem.name);
+    exit(1);
+  }
+
+  if(createSem(&semClose) == SEM_FAILED){
+    unlinkShMem(shmem.name);
+    unlinkSem(&semRead);
+    exit(1);
+  }
+
+  sem_post(semClose.address);
+
+  printf("%s\n", SHNAME);
+  printf("%s\n", S_READ_NAME);
+  printf("%s\n", S_CLOSE_NAME);
+
+  sleep(SLEEP_TIME);
 
   //Creating slaves
   int currSlave;
@@ -60,20 +86,17 @@ int main(int argc, char * argv[]) {
     slaves[currSlave].pid = currId;
   }
 
-  shmemInfo shmem;
-  shmem.name = SHNAME;
-
-  if (currId == 0) {
-    close(slaves[currSlave-1].appToSlave[1]);
-    close(slaves[currSlave-1].slaveToApp[0]);
+  if (currId == 0) { // cerrar los demas esclavos?
+    close(slaves[currSlave-1].appToSlave[WRITE]);
+    close(slaves[currSlave-1].slaveToApp[READ]);
 
     slaveProcess(slaves[currSlave - 1].appToSlave, slaves[currSlave - 1].slaveToApp);
   } else {
       // exit?
       //  close useless pipes
       for( int i = 0 ; i < slavesQty ; i++ ){
-        close(slaves[i].appToSlave[0]); //READ == 0
-        close(slaves[i].slaveToApp[1]);
+        close(slaves[i].appToSlave[READ]);
+        close(slaves[i].slaveToApp[WRITE]);
       }
 
       char currentHash[MD5_LENGTH + 1] = {0};
@@ -82,7 +105,7 @@ int main(int argc, char * argv[]) {
 
       // porq convendria seguir agregando los files mas tarde en vez d ahora ?
       for(int i = 0 ; filesSent < slavesQty ; i++){
-        write(slaves[i].appToSlave[1], &(files[filesSent]), sizeof(char *));
+        write(slaves[i].appToSlave[WRITE], &(files[filesSent]), sizeof(char *));  //hacer chequeo de errores en lib.c
         slaves[i].fileName = files[filesSent++];               
       }
 
@@ -90,15 +113,15 @@ int main(int argc, char * argv[]) {
         // Check if a pipe is ready to be read
         // In case it's not select removes it from fdSet
         if(select(FD_SETSIZE, &fdRead, NULL, NULL, NULL) == -1) {
-          perror("An error ocurred");
+          perror("An error ocurred");  //ver todos los perror y exit
           exit(1);
         }
 
         //si no termino d leer
         for(int i = 0 ; i < slavesQty && filesRead < filesNum ; i++) {
 
-          if(FD_ISSET(slaves[i].slaveToApp[0], &fdRead)) { //This if is to check if the pipe slaves[i].slaveToApp has something in it
-            if(read(slaves[i].slaveToApp[0], currentHash, sizeof(char)*MD5_LENGTH) == -1) {
+          if(FD_ISSET(slaves[i].slaveToApp[READ], &fdRead)) { //This if is to check if the pipe slaves[i].slaveToApp has something in it
+            if(read(slaves[i].slaveToApp[READ], currentHash, sizeof(char)*MD5_LENGTH) == -1) {
               perror("An error ocurred reading pipe");
               exit(1);
             }
@@ -109,10 +132,9 @@ int main(int argc, char * argv[]) {
             strcpy(bufToSend.file_name, slaves[i].fileName);
             // opcion alternativa strcat
 
-
-            pwrite(shmem.fd, &bufToSend, sizeof(bufToSend),filesRead);
+            writeToShMem(shmem.fd, &bufToSend, sizeof(bufToSend),filesRead);
           
-            //semaforo?
+            sem_post(semRead.address);
 
             filesRead++;
 
@@ -121,7 +143,7 @@ int main(int argc, char * argv[]) {
             
             // if there is any file missing
             if(filesSent < filesNum) {
-              write(slaves[i].appToSlave[1], &(files[filesSent]), sizeof(char *));
+              write(slaves[i].appToSlave[WRITE], &(files[filesSent]), sizeof(char *));
               slaves[i].fileName = files[filesSent];
               filesSent++;
             }
@@ -134,15 +156,18 @@ int main(int argc, char * argv[]) {
 
       //  Free slaves
       for(int i = 0; i < slavesQty; i++){
-        close(slaves[i].appToSlave[1]);
-        close(slaves[i].slaveToApp[0]);
+        close(slaves[i].appToSlave[WRITE]);
+        close(slaves[i].slaveToApp[READ]);
 
         kill(slaves[i].pid, SIGKILL);
       }
 
-      //Closing shared memory region
-      int i = munmap(shmem.mmap_addr, sizeof(shmem)); //check
-      int c = close(shmem.fd);
+      closeShMem(&shmem);
+      closeSem(&semRead);
+
+      sem_wait(semClose.address);
+
+      closeSem(&semClose);
   }
  
   fclose(file);
