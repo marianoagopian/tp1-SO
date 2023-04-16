@@ -89,14 +89,13 @@ int main(int argc, char * argv[]) {
     slaves[currSlave].pid = currId;
   }
 
-  if (currId == 0) { // cerrar los demas esclavos?
+  if (currId == 0) {
     closePipe(slaves[currSlave-1].appToSlave[WRITE]);
     closePipe(slaves[currSlave-1].slaveToApp[READ]);
 
     slaveProcess(slaves[currSlave - 1].appToSlave, slaves[currSlave - 1].slaveToApp);
   } else {
-      // exit?
-      //  close useless pipes
+      // close useless pipes
       for( int i = 0 ; i < slavesQty ; i++ ){
         closePipe(slaves[i].appToSlave[READ]);
         closePipe(slaves[i].slaveToApp[WRITE]);
@@ -119,7 +118,6 @@ int main(int argc, char * argv[]) {
           exit(ERROR_SELECT);
         }
 
-        //si no termino d leer
         for(int i = 0 ; i < slavesQty && filesRead < filesNum ; i++) {
 
           if(FD_ISSET(slaves[i].slaveToApp[READ], &fdRead)) { //This if is to check if the pipe slaves[i].slaveToApp has something in it
@@ -128,11 +126,10 @@ int main(int argc, char * argv[]) {
               exit(ERROR_READING_SLAVE_PIPE);
             }
 
-            //Completing hashData
+            // Creating object with info to send to Share Memory
             bufToSend.pid = slaves[i].pid;
             strcpy(bufToSend.hash, currentHash);
             strcpy(bufToSend.fileName, slaves[i].fileName);
-            // opcion alternativa strcat
 
             bufToSend.filesLeft = filesNum - filesRead;
             writeToShMem(shmem.fd, &bufToSend, sizeof(hashInfo), filesRead);
