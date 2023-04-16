@@ -1,6 +1,7 @@
 # Executable program
 main
 respuesta.txt
+vista
 
 # Object files
 *.o

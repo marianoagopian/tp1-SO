@@ -1,9 +1,11 @@
 #ifndef _LIB_H_
 #define _LIB_H_
 
+
+// These three defines are for imports to work properly
 #define _POSIX_SOURCE
 #define _BSD_SOURCE
-#define  _XOPEN_SOURCE 501
+#define  _XOPEN_SOURCE 500
 
 #include <semaphore.h>
 #include <signal.h>
@@ -18,7 +20,17 @@
 #include <fcntl.h>
 #include <string.h>
 
+// These define avoid magic numbers
 #define SHMEM_SIZE 16384 //4k
+#define MAX_BUFFER 256
+#define MD5_LENGTH 32
+#define FILES_PER_SLAVE 2
+#define READ 0
+#define WRITE 1
+#define SHNAME "md5"
+#define S_READ_NAME "md5_read_sem"
+#define S_CLOSE_NAME "md5_close_sem"
+#define SLEEP_TIME 2
 
 typedef struct semInfo {
 	char * name;
@@ -28,9 +40,15 @@ typedef struct semInfo {
 typedef struct shmemInfo {
 	char * name;
 	int fd;
-	void * mmap_address;
+	void * mmapAddress;
 } shmemInfo;
 
+typedef struct hashInfo {
+	int pid;
+	char hash[MD5_LENGTH + 1];
+	char fileName[MAX_BUFFER];
+	int filesLeft;
+} hashInfo;
 
 // Shared Memory
 void openShMem(shmemInfo * data);

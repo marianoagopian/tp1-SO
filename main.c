@@ -1,5 +1,4 @@
 #include "./includes/main.h"
-#define SHNAME "md5"
 #define SLAVES_QTY(x) ((x) > 10 ? 10 : (x))
 // Creating struct for slave
 // need one way for app to comunicate with slave
@@ -74,6 +73,8 @@ int main(int argc, char * argv[]) {
 
   sem_post(semClose.address);
 
+  setvbuf(stdout, NULL, _IONBF, 0);
+
   printf("%s\n", SHNAME);
   printf("%s\n", S_READ_NAME);
   printf("%s\n", S_CLOSE_NAME);
@@ -131,17 +132,18 @@ int main(int argc, char * argv[]) {
             //Completing hashData
             bufToSend.pid = slaves[i].pid;
             strcpy(bufToSend.hash, currentHash);
-            strcpy(bufToSend.file_name, slaves[i].fileName);
+            strcpy(bufToSend.fileName, slaves[i].fileName);
             // opcion alternativa strcat
 
-            writeToShMem(shmem.fd, &bufToSend, sizeof(bufToSend),filesRead);
+            bufToSend.filesLeft = filesNum - filesRead;
+            writeToShMem(shmem.fd, &bufToSend, sizeof(hashInfo), filesRead);
           
             sem_post(semRead.address);
 
             filesRead++;
 
             //Write in file
-            fprintf(file, "File name: %s, MD5: %s, Slave id: %d\n", slaves[i].fileName, currentHash, slaves[i].pid);
+            fprintf(file, "File name: %s, MD5: %s, Slave id: %d\n", bufToSend.fileName, bufToSend.hash, bufToSend.pid);
             
             // if there is any file missing
             if(filesSent < filesNum) {
@@ -170,8 +172,10 @@ int main(int argc, char * argv[]) {
       sem_wait(semClose.address);
 
       closeSem(&semClose);
+      fclose(file);
+      unlinkShMem(shmem.name);
+      unlinkSem(&semClose);
+      unlinkSem(&semRead);
   }
- 
-  fclose(file);
   return 0;
 }

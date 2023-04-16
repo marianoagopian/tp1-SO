@@ -7,7 +7,7 @@ void openShMem(shmemInfo * data) {
         exit(1);
     }
 
-    if((data->mmap_address = mmap(NULL, SHMEM_SIZE, PROT_READ, MAP_SHARED, data->fd, 0)) == MAP_FAILED) {
+    if((data->mmapAddress = mmap(NULL, SHMEM_SIZE, PROT_READ, MAP_SHARED, data->fd, 0)) == MAP_FAILED) {
         exit(1);
     }
 }
@@ -19,13 +19,13 @@ void createShMem(shmemInfo * data) {
     if(ftruncate(data->fd, SHMEM_SIZE) == -1) {
         exit(1);
     }
-    if((data->mmap_address = mmap(NULL, SHMEM_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, data->fd, 0)) == MAP_FAILED) {
+    if((data->mmapAddress = mmap(NULL, SHMEM_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, data->fd, 0)) == MAP_FAILED) {
         exit(1);
     }
 }
 
 void closeShMem(shmemInfo * data) {
-    if(munmap(data->mmap_address, SHMEM_SIZE) == -1) {
+    if(munmap(data->mmapAddress, SHMEM_SIZE) == -1) {
         exit(1);
     }
 
