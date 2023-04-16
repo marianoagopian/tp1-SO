@@ -73,5 +73,6 @@ void unlinkSem(semInfo * data) {
 // Check file
 int isFile(const char * filename) {
     struct stat buffer;
-    return stat(filename, &buffer) == 0;
+    stat(filename, &buffer);
+    return S_ISREG(buffer.st_mode);
 }

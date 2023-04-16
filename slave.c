@@ -15,11 +15,7 @@ int slaveProcess(int * appToSlave, int * slaveToApp) {
         dup2(subToSlave[WRITE], 1);
         close(subToSlave[WRITE]);
         params[1] = fileName;
-        if(isFile(fileName)) {
-          execvp("/usr/bin/md5sum", params);
-        } else {
-          printf("File is a directory or doesn't exist");
-        }
+        execvp("/usr/bin/md5sum", params);
       } else {
         close(subToSlave[WRITE]);
         dup2(subToSlave[READ], 0);

@@ -25,7 +25,9 @@ int main(int argc, char * argv[]) {
   }
 
   for(int i = 1 ; i < argc ; i++) {
-    files[filesNum++] = argv[i];
+    if(isFile(argv[i])) {
+      files[filesNum++] = argv[i];
+    }
   }
 
   fd_set fdRead, fdBackupRead;
