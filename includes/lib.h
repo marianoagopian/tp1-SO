@@ -1,3 +1,11 @@
+#ifndef _LIB_H_
+#define _LIB_H_
+
+#define _POSIX_SOURCE
+#define _BSD_SOURCE
+#define  _XOPEN_SOURCE 501
+
+#include <semaphore.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,11 +17,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
-#include <semaphore.h>
+
+#define SHMEM_SIZE 16384 //4k
 
 typedef struct semInfo {
 	char * name;
-	sem_t address;
+	sem_t * address;
 } semInfo;
 
 typedef struct shmemInfo {
@@ -38,3 +47,5 @@ void unlinkSem(semInfo * data);
 
 // Check file
 int isFile(const char * filename);
+
+#endif

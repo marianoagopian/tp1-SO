@@ -16,10 +16,10 @@ void createShMem(shmemInfo * data) {
     if((data->fd = shm_open(data->name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR)) == -1){
         exit(1);
     }
-    if(ftruncate(data->fd, sizeof(shmem)) == -1) {
+    if(ftruncate(data->fd, SHMEM_SIZE) == -1) {
         exit(1);
     }
-    if((data->mmap_address = mmap(NULL, sizeof(shmem), PROT_READ|PROT_WRITE, MAP_SHARED, data->fd, 0)) == MAP_FAILED) {
+    if((data->mmap_address = mmap(NULL, SHMEM_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, data->fd, 0)) == MAP_FAILED) {
         exit(1);
     }
 }
@@ -53,7 +53,7 @@ void * createSem(semInfo * data) {
 }
 
 void openSem(semInfo * data){
-    if((data->address = sem_open(data->name, O_RDONLY, S_IRUSR, 0) == -1)) {
+    if((data->address = sem_open(data->name, O_RDONLY, S_IRUSR, 0)) == SEM_FAILED) {
         exit(1);
     }
 }
