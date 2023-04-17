@@ -19,12 +19,18 @@ int main(int argc, char *argv[]) {
     fgets(semReadName, MAX_BUFFER, stdin);
     fgets(semCloseName, MAX_BUFFER, stdin);
 
-    shmemName[strlen(shmemName) - 1] = 0;
-    semReadName[strlen(semReadName) - 1] = 0; 
-    semCloseName[strlen(semCloseName) - 1] = 0;
+    int lenShName = strlen(shmemName);
+    int lenSemReadName = strlen(semReadName); 
+    int lenSemCloseName = strlen(semCloseName);
+    if (lenShName == 0 || lenSemReadName == 0 || lenSemCloseName == 0){
+      perror("Invalid string");
+      exit(ERROR_STR_INVALID);
+    }
+    shmemName[lenShName - 1] = 0;
+    semReadName[lenSemReadName - 1] = 0; 
+    semCloseName[lenSemCloseName - 1] = 0;
   }
   
-
   shmem.name = shmemName;
   semRead.name = semReadName;
   semClose.name = semCloseName;

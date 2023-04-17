@@ -106,6 +106,7 @@ int main(int argc, char * argv[]) {
       char currentHash[MD5_LENGTH + 1] = {0};
       int filesSent = 0, filesRead = 0;
       hashInfo bufToSend;
+      memset(&bufToSend, 0, sizeof(hashInfo));
 
       for(int i = 0 ; filesSent < slavesQty ; i++){
         write(slaves[i].appToSlave[WRITE], &(files[filesSent]), sizeof(char *));  //hacer chequeo de errores en lib.c

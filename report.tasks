@@ -1,4 +1,1 @@
 www.viva64.com/en/w	1	err	Help: The documentation for all analyzer warnings is available here: https://www.viva64.com/en/w/.
-/root/vista.c	22	err	V1010 Unchecked tainted data is used in index: 'strlen(shmemName)'.
-/root/vista.c	23	err	V1010 Unchecked tainted data is used in index: 'strlen(semReadName)'.
-/root/vista.c	24	err	V1010 Unchecked tainted data is used in index: 'strlen(semCloseName)'.

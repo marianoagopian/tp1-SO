@@ -4,7 +4,7 @@
 
 int slaveProcess(int * appToSlave, int * slaveToApp) {
   int subToSlave[2];
-  char *params[] = {"/usr/bin/md5sum", NULL, NULL};
+  char *params[] = {"md5sum", NULL, NULL}; //removed /usr/bin/md5sum because of vps' suggestion
   char output[MD5_LENGTH + 1] = {0};
   char *fileName;
 
@@ -17,7 +17,7 @@ int slaveProcess(int * appToSlave, int * slaveToApp) {
       duplicateFD(subToSlave[WRITE], 1);
       closePipe(subToSlave[WRITE]);
       params[1] = fileName;
-      execvp("/usr/bin/md5sum", params);
+      execvp("md5sum", params);
     } else {
       closePipe(subToSlave[WRITE]);
       duplicateFD(subToSlave[READ], 0);
