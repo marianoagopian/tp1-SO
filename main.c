@@ -1,11 +1,10 @@
-// This is a personal academic project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include "./includes/main.h"
+
 #define SLAVES_QTY(x) ((x) > 10 ? 10 : (x))
+
 // Creating struct for slave
 // need one way for app to comunicate with slave
 // and another for slave to comunicate with app
-
 typedef struct slave {
   int appToSlave[2];
   int slaveToApp[2];
@@ -153,7 +152,7 @@ int main(int argc, char * argv[]) {
           }
         }
 
-        // This is because select (line 74) clears all file descriptors that are not ready to be read
+        // This is because select (line 118) clears all file descriptors that are not ready to be read
         fdRead = fdBackupRead;
       }
 

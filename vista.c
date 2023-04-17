@@ -1,12 +1,11 @@
-// This is a personal academic project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+
 #include "./includes/vista.h"
 
 int main(int argc, char *argv[]) {
   char shmemName[MAX_BUFFER], semReadName[MAX_BUFFER], semCloseName[MAX_BUFFER];
   shmemInfo shmem;
   semInfo semRead, semClose;
-  hashInfo hash;
+  hashInfo shmReadInfo;
 
   if(argc >= 4) {
     // If function is called from two diffrent terminals
@@ -47,14 +46,14 @@ int main(int argc, char *argv[]) {
   for(int i = 0, finished = 0 ; !finished ; i++) {
     sem_wait(semRead.address);
 
-    if(pread(shmem.fd, &hash, sizeof(hashInfo), i * sizeof(hashInfo)) == -1) {
+    if(pread(shmem.fd, &shmReadInfo, sizeof(hashInfo), i * sizeof(hashInfo)) == -1) {
       sem_post(semClose.address);
       exit(ERROR_READING_SHMEM);
     }
 
-    printf("Slave id: %d | MD5: %s | File name: %s \n", hash.pid, hash.hash, hash.fileName);
+    printf("Slave id: %d | MD5: %s | File name: %s \n", shmReadInfo.pid, shmReadInfo.hash, shmReadInfo.fileName);
 
-    if(hash.filesLeft <= 1) {
+    if(shmReadInfo.filesLeft <= 1) {
       finished = 1;
     }
   }
